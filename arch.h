@@ -47,6 +47,8 @@
 #include "arch-m68k.h"
 #elif defined(__sh__)
 #include "arch-sh.h"
+#elif defined(__wasm__)
+#include "arch-wasm.h"
 #else
 #error Unsupported Architecture
 #endif

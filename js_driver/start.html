@@ -1,0 +1,10 @@
+<!doctype html>
+<html>
+<body>
+<script type="module">
+    const bytes = await fetch("../hello_wasm").then(r => r.arrayBuffer());
+    const { instance } = await WebAssembly.instantiate(bytes, {});
+    instance.exports._start();
+</script>
+</body>
+</html>

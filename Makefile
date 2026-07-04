@@ -1,6 +1,7 @@
 
 # ARCH should be set to the kernel's arch
-ARCH := $(shell uname -m)
+#ARCH := $(shell uname -m)
+ARCH := wasm
 
 # KDIR should be set to kernel dir
 KDIR ?= /usr/src/linux
@@ -101,3 +102,39 @@ headers_standalone: headers
 
 clean:
 	$(Q)rm -rf "$(OUTPUT)sysroot"
+
+# TODO: review header folders
+copy_system_headers:
+	cp -r /usr/include/linux ./sysroot/include ;
+	cp -r /usr/include/aarch64-linux-gnu/asm/ ./sysroot/include/ ;
+	cp -r /usr/include/asm-generic ./sysroot/include
+
+# TODO: review passed arguments
+build_hello_linux: headers copy_system_headers
+	clang  \
+			-g \
+	    	-O0 \
+	    	-static \
+	    	-nostdlib \
+	    	-nostdinc \
+	    	-isystem ./sysroot/include \
+	    	-include nolibc.h  \
+	     	hello.c	\
+	     	-o hello_linux
+
+# TODO: review passed arguments
+build_hello_wasm: headers copy_system_headers
+	clang  									\
+			--target=wasm32-unknown-unknown	\
+			-g 								\
+	    	-O0								\
+	    	-static 						\
+	    	-nostdlib 						\
+	    	-nostdinc 						\
+	    	-isystem ./sysroot/include 		\
+	    	-include nolibc.h  				\
+	     	hello.c							\
+	     	-o hello_wasm
+
+deps:
+	apt install -y clang lld linux-headers-generic

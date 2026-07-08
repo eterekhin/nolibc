@@ -2,8 +2,31 @@
 <html>
 <body>
 <script type="module">
+    let memory;
+    let write_buffer = [];
+    const imports = {
+        env: {
+            wasm_mmap(addr, size) {
+                return -1;
+            },
+            wasm_write(fd, buf, size) {
+                const bytes = new Uint8Array(memory.buffer, buf, size);
+                for (let i = 0; i < bytes.length; i++) {
+                    const current = bytes[i];
+                    if (current === 10) { // When \n met do console.log
+                        console.log(new TextDecoder().decode(new Uint8Array(write_buffer).buffer));
+                        write_buffer = [];
+                    } else
+                        write_buffer.push(bytes[i]);
+                }
+                return size;
+            }
+        }
+    };
+
     const bytes = await fetch("../hello_wasm").then(r => r.arrayBuffer());
-    const { instance } = await WebAssembly.instantiate(bytes, {});
+    const {instance} = await WebAssembly.instantiate(bytes, imports);
+    memory = instance.exports.memory
     instance.exports._start();
 </script>
 </body>

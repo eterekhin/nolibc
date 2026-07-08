@@ -133,6 +133,7 @@ build_hello_wasm: headers copy_system_headers
 	    	-nostdinc 						\
 	    	-isystem ./sysroot/include 		\
 	    	-include nolibc.h  				\
+			-Wl,--allow-undefined \
 	     	hello.c							\
 	     	-o hello_wasm
 

@@ -12,6 +12,7 @@
 #include "errno.h"
 #include "compiler.h"
 #include "crt.h"
+#include "wasm_imports.h"
 
 #define __ARCH_WANT_SYS_OLD_SELECT
 
@@ -56,6 +57,31 @@ static __inline__ long my_syscall0_handler(long num) {
     }
 }
 
+static __inline__ long my_syscall3_handler(long num, long arg1, long arg2, long arg3) {
+    switch (num) {
+        case __NR_write:
+            long fd = arg1;
+            long buf = arg2;
+            long count = arg3;
+            return wasm_write(fd, (char*)buf, count);
+    }
+    return NOT_IMPLEMENTED_SYSCALL();
+}
+
+static __inline__ long my_syscall6_handler(long num, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6) {
+    switch (num) {
+#if defined(__NR_mmap2)
+        case __NR_mmap2:
+#endif
+        case __NR_mmap:
+            long addr = arg1;
+            long len = arg2;
+            return (long)wasm_mmap(addr, len);
+            break;
+    }
+    return NOT_IMPLEMENTED_SYSCALL();
+}
+
 #define my_syscall0(num)                                                      \
 ({                                                                            \
     my_syscall0_handler(num);                                                            \
@@ -73,9 +99,8 @@ static __inline__ long my_syscall0_handler(long num) {
 
 #define my_syscall3(num, arg1, arg2, arg3)                                    \
 ({                                                                            \
-	NOT_IMPLEMENTED_SYSCALL();													  \
+	my_syscall3_handler(num, (long)arg1, (long)arg2, (long)arg3);                               \
 })
-
 #define my_syscall4(num, arg1, arg2, arg3, arg4)                              \
 ({                                                                            \
 	NOT_IMPLEMENTED_SYSCALL();                                                \
@@ -86,9 +111,9 @@ static __inline__ long my_syscall0_handler(long num) {
 	NOT_IMPLEMENTED_SYSCALL();												  \
 })
 
-#define my_syscall6(num, arg1, arg2, arg3, arg4, arg5, arg6)                  \
-({                                                                            \
-	NOT_IMPLEMENTED_SYSCALL();												\
+#define my_syscall6(num, arg1, arg2, arg3, arg4, arg5, arg6)                \
+({                                                                          \
+    my_syscall6_handler(num, (long)arg1, (long)arg2, (long)arg3, (long)arg4, (long)arg5, (long)arg6);           \
 })
 
 #ifndef NOLIBC_NO_RUNTIME

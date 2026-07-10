@@ -18,6 +18,16 @@
 
 #define DEBUGGING_SYSCALLS
 
+// wasm-ld adds this symbol, that goes after all static data
+// https://github.com/llvm/llvm-project/blob/ef1b46f29293db7b16dee598fb1e8f2a62555c33/lld/wasm/Config.h#L191
+extern char __heap_base;
+
+unsigned long wasm_heap_base()
+{
+    return (unsigned long)&__heap_base;
+}
+
+
 int main(int argc, char **argv, char **envp);
 
 static __inline__ long NOT_IMPLEMENTED_SYSCALL() {
@@ -76,7 +86,8 @@ static __inline__ long my_syscall6_handler(long num, long arg1, long arg2, long 
         case __NR_mmap:
             long addr = arg1;
             long len = arg2;
-            return (long)wasm_mmap(addr, len);
+            long prot = arg3;
+            return (long)wasm_mmap(addr, len, prot);
             break;
     }
     return NOT_IMPLEMENTED_SYSCALL();

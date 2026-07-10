@@ -133,7 +133,7 @@ build_hello_wasm: headers copy_system_headers
 	    	-nostdinc 						\
 	    	-isystem ./sysroot/include 		\
 	    	-include nolibc.h  				\
-			-Wl,--allow-undefined \
+			-Wl,--allow-undefined-file=wasm_undefined_symbols,--export=wasm_heap_base\
 	     	hello.c							\
 	     	-o hello_wasm
 

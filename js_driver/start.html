@@ -4,10 +4,27 @@
 <script type="module">
     let memory;
     let write_buffer = [];
+    let heap_end;
     const imports = {
         env: {
-            wasm_mmap(addr, size) {
-                return -1;
+            wasm_mmap(addr, size, prot) {
+                // TODO: validate prot
+                if (addr !== 0 || size === 0)
+                    return -22;
+
+                const page_size = 64 * 1024 // 64 KB, default wasm code page size
+                // align by 8 bytes, there is no obvious need to do that, but some C code calling us may expect to have
+                // the returned address aligned
+                const aligned_start = (heap_end + 7) & ~7;
+                const end = aligned_start + size;
+                if (memory.buffer.byteLength <= end) {
+                    const add_pages = Math.ceil((end - memory.buffer.byteLength) / page_size);
+                    // TODO: check success?
+                    memory.grow(add_pages)
+                }
+
+                heap_end = end;
+                return aligned_start;
             },
             wasm_write(fd, buf, size) {
                 const bytes = new Uint8Array(memory.buffer, buf, size);
@@ -27,6 +44,7 @@
     const bytes = await fetch("../hello_wasm").then(r => r.arrayBuffer());
     const {instance} = await WebAssembly.instantiate(bytes, imports);
     memory = instance.exports.memory
+    heap_end = instance.exports.wasm_heap_base()
     instance.exports._start();
 </script>
 </body>

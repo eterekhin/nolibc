@@ -45,7 +45,7 @@ def compile_c_to_wasm(source, output):
         str(NOLIBC_DIR / "sysroot/include"),
         "-include",
         "nolibc.h",
-        "-Wl,--allow-undefined",
+        "-Wl,--allow-undefined-file=wasm_undefined_symbols,--export=wasm_heap_base",
         str(source),
         "-o",
         str(output),

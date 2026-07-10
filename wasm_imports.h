@@ -5,7 +5,7 @@
 #ifndef NOLIBC_WASM_IMPORTS_H
 #define NOLIBC_WASM_IMPORTS_H
 
-void *wasm_mmap(long addr, long size);
+void *wasm_mmap(long addr, long size, int prot);
 
 int wasm_write(int fd, char *buf, int count);
 

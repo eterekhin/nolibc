@@ -128,10 +128,55 @@ static __inline__ long my_syscall6_handler(long num, long arg1, long arg2, long 
 })
 
 #ifndef NOLIBC_NO_RUNTIME
+
+extern int put_args(char **storage, int *argc);
+extern int put_env(char **storage, int *env_size);
+
+static __inline__ void copy(char *src, char **dst, int count) {
+    char *cur = src;
+    for (int i = 0; i < count; i++) {
+        if (src[i] == 0) {
+            *dst = cur;
+            cur = src + i + 1;
+            dst++;
+        }
+    }
+}
+
 /* startup code */
-void __attribute__((weak, noreturn)) __no_stack_protector _start(void) {
-    // TODO: extract all main arguments properly
-    main(0, 0, 0);
+void __attribute__((weak, noreturn)) __no_stack_protector wasm_start() {
+    int argc = 0, envc = 0;
+    int argv_size = put_args((char **) 0, &argc);
+    int env_size = put_env((char **) 0, &envc);
+
+    char argv_data[argv_size];
+    char env_data[env_size];
+    void *data[
+        1 + // argc_size
+        argc + 1 /*NULL*/ +
+        envc + 1 /*NULL*/ +
+        + 2 // auxv: NULL(AT_NULL), NULL
+    ];
+
+    // argc
+    ((int*)data)[0] = argc;
+
+    //argv
+    put_args((char **) argv_data, 0);
+    copy(argv_data, (char**)(data + 1), argv_size);
+    data[1 + argc] = 0;
+
+    //env
+    put_env((char**)env_data, 0);
+    copy(env_data, (char**)(data + 1 + argc + 1), env_size);
+    data[1 + argc + 1 + envc] = 0;
+
+    // auxv
+    // Setting 2 first words to null as expected for auxiliary vector :https://refspecs.linuxfoundation.org/LSB_1.3.0/IA64/spec/auxiliaryvector.html
+    data[1 + argc + 1 + envc + 1] = 0;
+    data[1 + argc + 1 + envc + 1 + 1] = 0;
+
+    _start_c((long*)data);
 }
 #endif /* NOLIBC_NO_RUNTIME */
 

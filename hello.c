@@ -15,7 +15,6 @@ int main(int argc, char **argv, char **envp)
 
 	environ = envp;
 
-	void* r = malloc(2);
 	printf("pid : <%d>\n", getpid());
 	printf("arg1: <%ld>\n", argc > 1 ? atol(argv[1]) : 0);
 	ret = printf("msg : <%s>\n", argc > 2 ? argv[2] : "hello");

@@ -2,11 +2,71 @@
 <html>
 <body>
 <script type="module">
+    let argv = ["start.html", "42", "Hello, World!"];
+    let envv = [{MY_ENV_VAR_NAME: "MY_ENV_VAR_VALUE"}, {PATH: "hello/world"}]
+
     let memory;
     let write_buffer = [];
     let heap_end;
+
+    const copy_strs_to_mem_fn = (strs, dst, isEnv) => {
+        const mem = new Uint8Array(memory.buffer);
+
+        let cursor = dst;
+        const encoder = new TextEncoder();
+
+        for (const arg of strs) {
+            let value;
+            if (isEnv) {
+                const keys = Object.keys(arg);
+                const envName = keys[0];
+                const envValue = arg[envName];
+                value = envName + "=" + envValue;
+            } else
+                value = arg
+
+            // todo: currently only ansi strings are supported
+            const bytes = encoder.encode(value);
+            mem.set(bytes, cursor);
+            cursor += bytes.length;
+            mem[cursor++] = 0;
+        }
+    }
+
     const imports = {
         env: {
+            put_args(dst, argSizePtr) {
+                let result = 0;
+                for (const arg of argv)
+                    result += arg.length + 1 /*NULL*/;
+
+                if (dst !== 0)
+                    copy_strs_to_mem_fn(argv, dst, false);
+
+                if (argSizePtr !== 0) {
+                    const view = new DataView(memory.buffer);
+                    view.setInt32(argSizePtr, argv.length, true);
+                }
+                return result;
+            },
+            put_env(dst, envSizePtr) {
+                let result = 0;
+
+                for (const arg of envv) {
+                    const keys = Object.keys(arg);
+                    const envName = keys[0];
+                    const envValue = arg[envName];
+                    result += envName.length + 1 /* = */ + envValue.length + 1/* NULL */
+                }
+
+                if (dst !== 0)
+                    copy_strs_to_mem_fn(envv, dst, true);
+                if (envSizePtr !== 0) {
+                    const view = new DataView(memory.buffer);
+                    view.setInt32(envSizePtr, envv.length, true);
+                }
+                return result
+            },
             wasm_mmap(addr, size, prot) {
                 // TODO: validate prot
                 if (addr !== 0 || size === 0)
@@ -45,7 +105,7 @@
     const {instance} = await WebAssembly.instantiate(bytes, imports);
     memory = instance.exports.memory
     heap_end = instance.exports.wasm_heap_base()
-    instance.exports._start();
+    instance.exports.wasm_start();
 </script>
 </body>
 </html>

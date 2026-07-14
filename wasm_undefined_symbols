@@ -1,2 +1,4 @@
 wasm_write
 wasm_mmap
+put_args
+put_env

@@ -89,3 +89,47 @@ int main(int argc, char **argv, char **envp)
     )
     assert ['a' * (1 << 16)] == output
 
+
+def test_argv_from_query_parameters(run_c_in_browser):
+    output = run_c_in_browser(
+        r'''
+#include <stdio.h>
+
+int main(int argc, char **argv, char **envp)
+{
+    printf("%d\n", argc);
+    for (int i = 0; i < argc; i++)
+        printf("%s\n", argv[i]);
+    return 0;
+}
+''',
+        argv=["query-program", "first argument", "second=argument"],
+    )
+
+    assert [
+        "3",
+        "query-program",
+        "first argument",
+        "second=argument",
+    ] == output
+
+
+def test_environment_from_query_parameters(run_c_in_browser):
+    output = run_c_in_browser(
+        r'''
+#include <stdio.h>
+
+int main(int argc, char **argv, char **envp)
+{
+    for (int i = 0; envp[i]; i++)
+        printf("%s\n", envp[i]);
+    return 0;
+}
+''',
+        env={"QUERY_ENV": "value with spaces", "PATH": "/query/path"},
+    )
+
+    assert [
+        "QUERY_ENV=value with spaces",
+        "PATH=/query/path",
+    ] == output

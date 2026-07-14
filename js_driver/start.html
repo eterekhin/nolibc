@@ -2,8 +2,44 @@
 <html>
 <body>
 <script type="module">
-    let argv = ["start.html", "42", "Hello, World!"];
-    let envv = [{MY_ENV_VAR_NAME: "MY_ENV_VAR_VALUE"}, {PATH: "hello/world"}]
+    const defaultArgv = ["start.html", "42", "Hello, World!"];
+    const defaultEnvv = [{MY_ENV_VAR_NAME: "MY_ENV_VAR_VALUE"}, {PATH: "hello/world"}];
+    const printParameterHelp = () =>
+        console.warn('Use ?argv=["program","arg"]&env={"NAME":"VALUE"}.');
+
+    const parseStringArrayParameter = (name) => {
+        const value = new URLSearchParams(window.location.search).get(name);
+        if (value === null)
+            return null;
+
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed) && parsed.every(item => typeof item === "string"))
+                return parsed;
+        } catch {
+        }
+        printParameterHelp();
+        return null;
+    };
+
+    const parseEnvironmentParameter = () => {
+        const value = new URLSearchParams(window.location.search).get("env");
+        if (value === null)
+            return null;
+
+        try {
+            const parsed = JSON.parse(value);
+            if (parsed !== null && !Array.isArray(parsed) && typeof parsed === "object" &&
+                Object.entries(parsed).every(([name, value]) => name.length > 0 && typeof value === "string"))
+                return Object.entries(parsed).map(([name, value]) => ({[name]: value}));
+        } catch {
+        }
+        printParameterHelp();
+        return null;
+    };
+
+    let argv = parseStringArrayParameter("argv") ?? defaultArgv;
+    let envv = parseEnvironmentParameter() ?? defaultEnvv;
 
     let memory;
     let write_buffer = [];

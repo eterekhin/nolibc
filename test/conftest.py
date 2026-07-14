@@ -1,8 +1,10 @@
 import http.server
+import json
 import shutil
 import socket
 import subprocess
 import threading
+import urllib.parse
 from pathlib import Path
 
 import pytest
@@ -45,7 +47,7 @@ def compile_c_to_wasm(source, output):
         str(NOLIBC_DIR / "sysroot/include"),
         "-include",
         "nolibc.h",
-        "-Wl,--allow-undefined-file=wasm_undefined_symbols,--export=wasm_heap_base",
+        "-Wl,--allow-undefined-file=wasm_undefined_symbols,--export=wasm_start,--export=wasm_heap_base,--no-entry",
         str(source),
         "-o",
         str(output),
@@ -62,7 +64,7 @@ def compile_c_to_wasm(source, output):
 
 @pytest.fixture
 def run_c_in_browser(page, tmp_path):
-    def run(source_code):
+    def run(source_code, argv=None, env=None):
         source = tmp_path / "hello.c"
         source.write_text(source_code, encoding="utf-8")
 
@@ -78,7 +80,16 @@ def run_c_in_browser(page, tmp_path):
 
         server, base_url = start_static_server(web_root)
         try:
-            page.goto(f"{base_url}/js_driver/start.html")
+            query = {}
+            if argv is not None:
+                query["argv"] = json.dumps(argv)
+            if env is not None:
+                query["env"] = json.dumps(env)
+            query_string = urllib.parse.urlencode(query)
+            url = f"{base_url}/js_driver/start.html"
+            if query_string:
+                url += f"?{query_string}"
+            page.goto(url)
             page.wait_for_load_state("networkidle")
         finally:
             server.shutdown()

@@ -15,6 +15,21 @@ int main(int argc, char **argv, char **envp)
 
     assert ['', 'hello from wasm', 'a', 'b'] == output
 
+
+def test_exit_syscall_in_browser(run_c_in_browser):
+    output = run_c_in_browser(
+        r'''
+#include <stdlib.h>
+
+int main(int argc, char **argv, char **envp)
+{
+    exit(42);
+}
+''', reportExitCode=True)
+
+    assert ['WebAssembly exited with status code 42'] == output
+
+
 def test_malloc_simple(run_c_in_browser):
     output = run_c_in_browser(
         r'''

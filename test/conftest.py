@@ -64,7 +64,7 @@ def compile_c_to_wasm(source, output):
 
 @pytest.fixture
 def run_c_in_browser(page, tmp_path):
-    def run(source_code, argv=None, env=None):
+    def run(source_code, argv=None, env=None, reportExitCode=False):
         source = tmp_path / "hello.c"
         source.write_text(source_code, encoding="utf-8")
 
@@ -85,6 +85,8 @@ def run_c_in_browser(page, tmp_path):
                 query["argv"] = json.dumps(argv)
             if env is not None:
                 query["env"] = json.dumps(env)
+            if reportExitCode:
+                query["reportExitCode"] = "true"
             query_string = urllib.parse.urlencode(query)
             url = f"{base_url}/js_driver/start.html"
             if query_string:

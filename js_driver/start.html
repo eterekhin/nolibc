@@ -12,7 +12,7 @@
     const defaultArgv = ["start.html", "42", "Hello, World!"];
     const defaultEnvv = [{MY_ENV_VAR_NAME: "MY_ENV_VAR_VALUE"}, {PATH: "hello/world"}];
     const printParameterHelp = () =>
-        console.warn('Use ?argv=["program","arg"]&env={"NAME":"VALUE"}.');
+        console.warn('Use ?argv=["program","arg"]&env={"NAME":"VALUE"}&reportExitCode=true.');
 
     const parseStringArrayParameter = (name) => {
         const value = new URLSearchParams(window.location.search).get(name);
@@ -47,6 +47,7 @@
 
     let argv = parseStringArrayParameter("argv") ?? defaultArgv;
     let envv = parseEnvironmentParameter() ?? defaultEnvv;
+    const reportExitCode = new URLSearchParams(window.location.search).get("reportExitCode") === "true";
 
     let memory;
     let write_buffer = [];
@@ -156,6 +157,8 @@
     } catch (error) {
         if (!(error instanceof ExitError))
             throw error;
+        if (reportExitCode)
+            console.log(error.message);
     }
 </script>
 </body>

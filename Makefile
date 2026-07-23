@@ -67,6 +67,7 @@ all_files := \
 		types.h \
 		unistd.h \
 		stdio.h \
+		wasm_imports.h
 
 
 # install all headers needed to support a bare-metal compiler

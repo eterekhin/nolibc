@@ -2,9 +2,6 @@
 // Created by Evgeny Terekhin on 04.07.26.
 //
 
-#ifndef NOLIBC_ARCH_WASM_H
-#define NOLIBC_ARCH_WASM_H
-
 #ifndef _NOLIBC_ARCH_WASM_H
 #define _NOLIBC_ARCH_WASM_H
 
@@ -14,7 +11,7 @@
 #include "crt.h"
 #include "wasm_imports.h"
 
-#define __ARCH_WANT_SYS_OLD_SELECT
+// #define __ARCH_WANT_SYS_OLD_SELECT
 
 #define DEBUGGING_SYSCALLS
 
@@ -26,9 +23,6 @@ unsigned long wasm_heap_base()
 {
     return (unsigned long)&__heap_base;
 }
-
-
-int main(int argc, char **argv, char **envp);
 
 static __inline__ long NOT_IMPLEMENTED_SYSCALL() {
     return -ENOSYS; // return syscall is missing
@@ -67,6 +61,18 @@ static __inline__ long my_syscall0_handler(long num) {
     }
 }
 
+static __inline__ long my_syscall1_handler(long num, long arg1) {
+    switch (num) {
+        case __NR_exit:
+            long code = arg1;
+            wasm_exit(code);
+            __builtin_unreachable();
+    }
+
+    return NOT_IMPLEMENTED_SYSCALL();
+}
+
+
 static __inline__ long my_syscall3_handler(long num, long arg1, long arg2, long arg3) {
     switch (num) {
         case __NR_write:
@@ -100,7 +106,7 @@ static __inline__ long my_syscall6_handler(long num, long arg1, long arg2, long 
 
 #define my_syscall1(num, arg1)                                                \
 ({                                                                            \
-	NOT_IMPLEMENTED_SYSCALL();													  \
+	my_syscall1_handler(num, (long)(arg1)); 										  \
 })
 
 #define my_syscall2(num, arg1, arg2)                                          \
@@ -110,7 +116,7 @@ static __inline__ long my_syscall6_handler(long num, long arg1, long arg2, long 
 
 #define my_syscall3(num, arg1, arg2, arg3)                                    \
 ({                                                                            \
-	my_syscall3_handler(num, (long)arg1, (long)arg2, (long)arg3);                               \
+	my_syscall3_handler(num, (long)(arg1), (long)(arg2), (long)(arg3));       \
 })
 #define my_syscall4(num, arg1, arg2, arg3, arg4)                              \
 ({                                                                            \
@@ -124,7 +130,7 @@ static __inline__ long my_syscall6_handler(long num, long arg1, long arg2, long 
 
 #define my_syscall6(num, arg1, arg2, arg3, arg4, arg5, arg6)                \
 ({                                                                          \
-    my_syscall6_handler(num, (long)arg1, (long)arg2, (long)arg3, (long)arg4, (long)arg5, (long)arg6);           \
+    my_syscall6_handler(num, (long)(arg1), (long)(arg2), (long)(arg3), (long)(arg4), (long)(arg5), (long)(arg6));  \
 })
 
 #ifndef NOLIBC_NO_RUNTIME
@@ -181,6 +187,3 @@ void __attribute__((weak, noreturn)) __no_stack_protector wasm_start() {
 #endif /* NOLIBC_NO_RUNTIME */
 
 #endif /* _NOLIBC_ARCH_WASM_H */
-
-
-#endif //NOLIBC_ARCH_WASM_H

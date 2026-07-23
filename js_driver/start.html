@@ -2,6 +2,13 @@
 <html>
 <body>
 <script type="module">
+    class ExitError extends Error {
+        constructor(status) {
+            super(`WebAssembly exited with status code ${status}`);
+            this.status = status;
+        }
+    }
+
     const defaultArgv = ["start.html", "42", "Hello, World!"];
     const defaultEnvv = [{MY_ENV_VAR_NAME: "MY_ENV_VAR_VALUE"}, {PATH: "hello/world"}];
     const printParameterHelp = () =>
@@ -133,6 +140,9 @@
                         write_buffer.push(bytes[i]);
                 }
                 return size;
+            },
+            wasm_exit(status) {
+                throw new ExitError(status);
             }
         }
     };
@@ -141,7 +151,12 @@
     const {instance} = await WebAssembly.instantiate(bytes, imports);
     memory = instance.exports.memory
     heap_end = instance.exports.wasm_heap_base()
-    instance.exports.wasm_start();
+    try {
+        instance.exports.wasm_start();
+    } catch (error) {
+        if (!(error instanceof ExitError))
+            throw error;
+    }
 </script>
 </body>
 </html>
